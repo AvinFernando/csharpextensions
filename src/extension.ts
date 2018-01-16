@@ -89,11 +89,13 @@ function promptAndSave(args, templatetype: string) {
                 pathSepRegEx = /\\/g;
 
             var useCsprojRootNamespace = vscode.workspace.getConfiguration().get('csharpextensions.useCsprojRootNamespace', false);
+            var csProjPath = "";
 
             var nsresolver;
-            if (useCsprojRootNamespace) {
-                nsresolver = CsprojUtil.getPath(args.fsPath).then(function (res: string) {
+            if (useCsprojRootNamespace) {                
+                nsresolver = CsprojUtil.getPath(args.fsPath).then(function (res: string) {                    
                     var result = CsprojUtil.forFile(res);
+                    csProjPath = res;
                     return result;
                 }).then(function (csproj) {
                     var csprojNamespace = CsprojUtil.getRootNamespace(csproj);
@@ -101,6 +103,15 @@ function promptAndSave(args, templatetype: string) {
                          vscode.window.showWarningMessage("RootNamespace element not found in " + csproj.name);
                     }
                     return csprojNamespace;
+                }).then(function (rootNamespace) {
+                    var pathNamespace = path.dirname(newfilepath.substring(csProjPath.lastIndexOf(path.sep)));
+                    pathNamespace = pathNamespace.replace(pathSepRegEx, '.');
+
+                    pathNamespace = pathNamespace.replace(/\s+/g, "_");
+                    pathNamespace = pathNamespace.replace(/-/g, "_");
+                    if (pathNamespace.length > 1)
+                        rootNamespace += pathNamespace;
+                    return rootNamespace;
                 });
             } else {
                 nsresolver = new Promise(function (resolve, reject) {
